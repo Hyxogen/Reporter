@@ -1,4 +1,4 @@
-package com.hyxogen.reporter.handlers.local.io;
+package com.hyxogen.reporter.handlers.local.io.json;
 
 import com.google.gson.Gson;
 import com.hyxogen.reporter.Report;
@@ -13,6 +13,10 @@ import java.util.Collection;
 
 public class JSONReportReader implements IReportReader {
 
+    /**
+     * @param file
+     * @return null if file could not be found
+     */
     @Override
     public Collection<? extends Report> getAll(File file) {
         try {
@@ -27,6 +31,6 @@ public class JSONReportReader implements IReportReader {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return Arrays.asList();
+        return null;
     }
 }

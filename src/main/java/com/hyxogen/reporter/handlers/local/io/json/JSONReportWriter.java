@@ -1,4 +1,4 @@
-package com.hyxogen.reporter.handlers.local.io;
+package com.hyxogen.reporter.handlers.local.io.json;
 
 import com.google.gson.Gson;
 import com.hyxogen.reporter.Report;
