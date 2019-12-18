@@ -1,67 +1,52 @@
 package com.hyxogen.reporter.handlers.local;
 
-import com.google.gson.Gson;
 import com.hyxogen.reporter.Report;
-import com.hyxogen.reporter.ReporterPlugin;
-import com.hyxogen.reporter.handlers.ReportHandler;
+import com.hyxogen.reporter.handlers.IReportHandler;
+import com.hyxogen.reporter.io.IReportReader;
+import com.hyxogen.reporter.io.IReportWriter;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.UUID;
 
-public class LocalReportHandler extends ReportHandler {
+public class LocalReportHandler implements IReportHandler {
 
-    private Set<Report> reports;
-    private File reportFile;
-    private Gson gson;
+    public final IReportReader READER;
+    public final IReportWriter WRITER;
+    public final File REPORT_FILE;
 
-    public LocalReportHandler(ReporterPlugin plugin) {
-        super(plugin);
+    private Set<Report> reports = new HashSet<>();
+
+    public LocalReportHandler(IReportReader reader, IReportWriter writer, File file) {
+        READER = reader;
+        WRITER = writer;
+        REPORT_FILE = file;
     }
 
     @Override
     public synchronized void init() {
-        gson = new Gson();
-        reportFile = new File(PLUGIN.getDataFolder().getAbsolutePath() + "reports.json");
-        if(!reportFile.exists()) {
-            try {
-                reportFile.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return;
-        }
-
-        try {
-            FileReader reader = new FileReader(reportFile);
-            Report[] loaded = gson.fromJson(reader, Report[].class);
-            reader.close();
-
-            reports = new HashSet<>(Arrays.asList(loaded));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        reports.addAll(READER.getAll(REPORT_FILE));
     }
 
     @Override
-    public synchronized void terminate() {
-        try {
-            FileWriter writer = new FileWriter(reportFile);
-            Report[] list = reports.toArray(new Report[reports.size()]);
-            writer.write(gson.toJson(list));
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void save() {
+        WRITER.write(reports, REPORT_FILE);
     }
 
+    /**
+     * Get all reports stored in memory
+     *
+     * @return an empty {@link Set} if no reports are stored in memory
+     */
     @Override
     public Set<Report> getAll() {
         return reports;
     }
 
     /**
+     * Get report with specific using the unique id
      *
      * @param id
      * @return null if no reports with id is found
@@ -77,7 +62,7 @@ public class LocalReportHandler extends ReportHandler {
     }
 
     /**
-     *
+     * Gets all the reports that have been sent to the user
      * @param reported
      * @return an empty {@link HashSet} if no reports are found matching the criteria
      */
@@ -93,8 +78,7 @@ public class LocalReportHandler extends ReportHandler {
     }
 
     /**
-     *
-     *
+     * Get all the reports that the user has sent to others
      * @param reporter
      * @return an empty {@link HashSet} if no reports are found matching the criteria
      */
@@ -104,16 +88,26 @@ public class LocalReportHandler extends ReportHandler {
         Iterator<Report> iterator = reports.iterator();
 
         Report report = null;
-        while(iterator.hasNext() && (report = iterator.next()) != null)
-            if(report.REPORTER_UUID.equals(reporter)) out.add(report);
+        while (iterator.hasNext() && (report = iterator.next()) != null)
+            if (report.REPORTER_UUID.equals(reporter)) out.add(report);
         return out;
     }
 
+    /**
+     * Add a report to the database to be stored
+     *
+     * @param report
+     */
     @Override
     public void add(Report report) {
         reports.add(report);
     }
 
+    /**
+     * Permanently remove a report from memory and storage
+     *
+     * @param report
+     */
     @Override
     public void remove(Report report) {
         reports.remove(report);
